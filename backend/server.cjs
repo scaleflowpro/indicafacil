@@ -17,16 +17,37 @@ if (!GHOSTPAY_SECRETKEY) {
 
 // Endpoint para gerar cobrança Pix via GhostsPay
 app.post('/api/pix/generate', async (req, res) => {
-  const { nome, cpf, valor, descricao } = req.body;
+  const {
+    nome, email, cpf, phone, valor, // do frontend (valor em centavos)
+    cep, complemento, numero, rua, bairro, cidade, estado
+  } = req.body;
+
   try {
     const response = await axios.post(
-      'https://api.ghostspaysv1.com/pix/charge', // CONFIRME O ENDPOINT NA DOC
+      'https://app.ghostspaysv1.com/api/v1/transaction.purchase',
       {
         name: nome,
+        email: email,
         cpf: cpf,
-        value: valor,
-        description: descricao
-        // outros campos conforme a doc
+        phone: phone,
+        paymentMethod: "PIX",
+        amount: valor, // valor em centavos (ex: 2500 = R$ 25,00)
+        traceable: true,
+        items: [
+          {
+            unitPrice: valor,
+            title: "Recarga de Créditos",
+            quantity: 1,
+            tangible: false
+          }
+        ],
+        cep: cep || "",
+        complement: complemento || "",
+        number: numero || "",
+        street: rua || "",
+        district: bairro || "",
+        city: cidade || "",
+        state: estado || ""
       },
       {
         headers: {
