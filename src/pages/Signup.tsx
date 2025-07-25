@@ -107,9 +107,18 @@ const Signup: React.FC = () => {
         credits: 0
       });
       
-      // Redirecionar para o checkout BSPAY
+      console.log('Conta criada com sucesso! Abrindo checkout...');
+      
+      // Abrir checkout em nova aba para evitar redirecionamento
       const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM';
-      window.location.href = BSPAY_CHECKOUT_URL;
+      console.log('Abrindo checkout em nova aba:', BSPAY_CHECKOUT_URL);
+      
+      // Abrir em nova aba
+      window.open(BSPAY_CHECKOUT_URL, '_blank');
+      
+      // Mostrar mensagem de sucesso
+      setError('');
+      alert('Conta criada com sucesso! O checkout foi aberto em uma nova aba. Após o pagamento, você receberá os créditos automaticamente.');
       
     } catch (err) {
       console.error('Erro ao criar conta:', err);
