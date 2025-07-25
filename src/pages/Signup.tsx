@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, Phone, CreditCard, ArrowLeft, Copy, Check, RefreshCw, QrCode } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { createPixPayment, checkPaymentStatus, type PaymentData } from '../lib/payment';
+
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
@@ -22,14 +22,7 @@ const Signup: React.FC = () => {
   });
   const [error, setError] = useState('');
   const [step, setStep] = useState(1); // 1: dados pessoais, 2: dados pix, 3: pagamento
-  const [paymentData, setPaymentData] = useState<{
-    transactionId: string;
-    pixCode: string;
-    qrCode?: string;
-    expiresAt: string;
-  } | null>(null);
-  const [pixCodeCopied, setPixCodeCopied] = useState(false);
-  const [checkingPayment, setCheckingPayment] = useState(false);
+
   
   const { signup, isLoading } = useAuth();
   const navigate = useNavigate();
@@ -104,84 +97,31 @@ const Signup: React.FC = () => {
       return;
     }
 
-    // Create Pix payment for account activation
-    const paymentRequest: PaymentData = {
-      name: formData.name,
-      email: formData.email,
-      cpf: formData.cpf,
-      phone: formData.phone,
-      amount: 3000, // R$ 30.00 em centavos conforme documentação
-      description: "Ativação da Conta - IndicaFácil"
-    };
-
+    // Primeiro, criar a conta do usuário
     try {
-      const payment = await createPixPayment(paymentRequest);
-      
-      if (payment.success && payment.pixCode && payment.transactionId) {
-        setPaymentData({
-          transactionId: payment.transactionId,
-          pixCode: payment.pixCode,
-          qrCode: payment.qrCode,
-          expiresAt: payment.expiresAt || ''
-        });
-        setStep(3);
-      } else {
-        setError(payment.error || 'Erro ao gerar cobrança Pix');
-      }
-    } catch (err) {
-      console.error('Payment creation error:', err);
-      setError('Erro ao gerar cobrança Pix. Tente novamente.');
-    }
-  };
-
-  const copyPixCode = () => {
-    if (paymentData?.pixCode) {
-      navigator.clipboard.writeText(paymentData.pixCode);
-      setPixCodeCopied(true);
-      setTimeout(() => setPixCodeCopied(false), 2000);
-    }
-  };
-
-  const checkPayment = async () => {
-    if (!paymentData?.transactionId) return;
-
-    setCheckingPayment(true);
-    try {
-      const status = await checkPaymentStatus(paymentData.transactionId);
-      
-      if (status.status === 'paid') {
-        // Payment confirmed, create account
-        await handleAccountCreation();
-      } else if (status.status === 'expired' || status.status === 'cancelled') {
-        setError('Pagamento expirado ou cancelado. Tente novamente.');
-        setStep(2);
-        setPaymentData(null);
-      } else {
-        setError('Pagamento ainda não foi confirmado. Aguarde alguns instantes.');
-      }
-    } catch (err) {
-      setError('Erro ao verificar pagamento. Tente novamente.');
-    } finally {
-      setCheckingPayment(false);
-    }
-  };
-
-  const handleAccountCreation = async () => {
-    try {
-      console.log('Submitting signup form...');
+      console.log('Criando conta do usuário...');
       await signup({
         ...formData,
         referredBy: referralCode,
-        transactionId: paymentData?.transactionId,
-        // Account is activated since payment was confirmed
-        credits: 30 // Give initial credits after payment
+        // Não dar créditos ainda, pois o pagamento será feito via checkout
+        credits: 0
       });
+      
+      // Redirecionar para o checkout BSPAY
       const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM';
       window.location.href = BSPAY_CHECKOUT_URL;
+      
     } catch (err) {
+      console.error('Erro ao criar conta:', err);
       setError('Erro ao criar conta. Tente novamente.');
     }
   };
+
+
+
+
+
+
 
   const handleBackStep = () => {
     setStep(step - 1);
@@ -192,7 +132,6 @@ const Signup: React.FC = () => {
     switch (step) {
       case 1: return 'Criar sua conta';
       case 2: return 'Dados para pagamento';
-      case 3: return 'Pagamento via Pix';
       default: return 'Criar sua conta';
     }
   };
@@ -200,8 +139,7 @@ const Signup: React.FC = () => {
   const getStepDescription = () => {
     switch (step) {
       case 1: return 'Complete os dados abaixo para começar';
-      case 2: return 'Configure sua chave Pix para receber pagamentos';
-      case 3: return 'Realize o pagamento para ativar sua conta';
+      case 2: return 'Configure sua chave Pix e será redirecionado para o pagamento';
       default: return 'Complete os dados abaixo para começar';
     }
   };
@@ -330,7 +268,7 @@ const Signup: React.FC = () => {
               <div className="bg-blue-50 border border-blue-200 p-4 rounded-xl">
                 <h3 className="font-semibold text-blue-800 mb-2">💳 Ativação da Conta</h3>
                 <p className="text-blue-700 text-sm">
-                  Para ativar sua conta e liberar o sistema de indicações, será necessário realizar um depósito inicial de R$ 30 via Pix após o cadastro.
+                  Para ativar sua conta e liberar o sistema de indicações, você será redirecionado para o checkout BSPAY para realizar o pagamento de R$ 30.
                 </p>
               </div>
 
@@ -363,95 +301,11 @@ const Signup: React.FC = () => {
                   className="flex-1"
                   isLoading={isLoading}
                 >
-                  Gerar Cobrança Pix
+                  Criar Conta e Ir para Pagamento
                 </Button>
               </div>
             </form>
-          ) : (
-            <div className="space-y-6">
-              {error && (
-                <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl">
-                  {error}
-                </div>
-              )}
-
-              <div className="text-center">
-                <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <QrCode className="w-8 h-8 text-green-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Pagamento de R$ 30,00
-                </h3>
-                <p className="text-gray-600 text-sm">
-                  Escaneie o QR Code ou copie o código Pix abaixo
-                </p>
-              </div>
-
-              {paymentData?.qrCode && (
-                <div className="flex justify-center">
-                  <img 
-                    src={paymentData.qrCode}
-                    alt="QR Code Pix"
-                    className="w-48 h-48 border rounded-lg"
-                  />
-                </div>
-              )}
-
-              <div className="space-y-3">
-                <label className="block text-sm font-medium text-gray-700">
-                  Código Pix (Copia e Cola)
-                </label>
-                <div className="bg-gray-50 p-3 rounded-lg border">
-                  <div className="text-xs font-mono break-all text-gray-800 mb-2">
-                    {paymentData?.pixCode}
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={copyPixCode}
-                    className="w-full"
-                  >
-                    {pixCodeCopied ? <Check className="w-4 h-4 mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
-                    {pixCodeCopied ? 'Código Copiado!' : 'Copiar Código Pix'}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                <h4 className="font-semibold text-blue-900 mb-2">ℹ️ Instruções:</h4>
-                <ul className="text-blue-800 text-sm space-y-1">
-                  <li>• Abra seu app do banco</li>
-                  <li>• Escolha a opção Pix</li>
-                  <li>• Escaneie o QR Code ou cole o código</li>
-                  <li>• Confirme o pagamento de R$ 30,00</li>
-                  <li>• Clique em "Verificar Pagamento" após pagar</li>
-                </ul>
-              </div>
-
-              <div className="flex gap-3">
-                <Button
-                  variant="outline"
-                  onClick={handleBackStep}
-                  className="flex-1"
-                >
-                  Voltar
-                </Button>
-                <Button
-                  onClick={checkPayment}
-                  isLoading={checkingPayment}
-                  className="flex-1"
-                >
-                  {checkingPayment ? 'Verificando...' : 'Verificar Pagamento'}
-                </Button>
-              </div>
-
-              {paymentData?.expiresAt && (
-                <div className="text-center text-xs text-gray-500">
-                  Expira em: {new Date(paymentData.expiresAt).toLocaleString('pt-BR')}
-                </div>
-              )}
-            </div>
-          )}
+          ) : null}
 
           <div className="text-center pt-6 border-t border-gray-100">
             <p className="text-gray-600">
