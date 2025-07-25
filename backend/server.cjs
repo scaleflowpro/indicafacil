@@ -5,6 +5,10 @@ const cors = require('cors');
 
 require('dotenv').config();
 
+// Debug: Verifique se as variáveis de ambiente estão sendo carregadas corretamente
+console.log("BSPAY_CLIENT_ID:", process.env.BSPAY_CLIENT_ID);
+console.log("BSPAY_CLIENT_SECRET:", process.env.BSPAY_CLIENT_SECRET);
+
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
