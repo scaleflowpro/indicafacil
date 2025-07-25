@@ -64,50 +64,19 @@ const Recarga: React.FC = () => {
     }
   ];
 
-  const handlePurchase = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedPackage) return;
-    
-    const pkg = packages.find(p => p.id === selectedPackage);
-    if (!pkg) return;
+  const CHECKOUT_LINKS = {
+    10: 'https://checkout.payindicafacil.shop/buy/BSZDNIZTBMY2',
+    25: 'https://checkout.payindicafacil.shop/buy/BSZDG3NDM3Y2',
+    50: 'https://checkout.payindicafacil.shop/buy/BSOGNKZJJKMJ',
+    100: 'https://checkout.payindicafacil.shop/buy/BSMDQWZGNIYJ',
+  };
 
-    if (!userInfo.name || !userInfo.email || !userInfo.cpf || !userInfo.phone) {
-      alert('Por favor, preencha todos os campos');
-      return;
-    }
-
-    setIsProcessing(true);
-    
-    try {
-      const rechargeData: RechargeData = {
-        packageId: selectedPackage,
-        name: userInfo.name,
-        email: userInfo.email,
-        cpf: userInfo.cpf,
-        phone: userInfo.phone
-      };
-
-      const response = await createRecharge(rechargeData);
-      
-      if (response.success && response.transactionId && response.pixCode) {
-        setPaymentData({
-          transactionId: response.transactionId,
-          pixCode: response.pixCode,
-          qrCode: response.qrCode || '',
-          expiresAt: response.expiresAt || '',
-          amount: response.amount || pkg.price,
-          credits: response.credits || pkg.credits,
-          bonusCredits: response.bonusCredits || pkg.bonus
-        });
-        setShowPayment(true);
-      } else {
-        alert(response.error || 'Erro ao gerar cobrança Pix');
-      }
-    } catch (error) {
-      console.error('Error creating recharge:', error);
-      alert('Erro ao processar recarga. Tente novamente.');
-    } finally {
-      setIsProcessing(false);
+  const handlePurchase = (selectedPackageId: number) => {
+    const checkoutUrl = CHECKOUT_LINKS[selectedPackageId];
+    if (checkoutUrl) {
+      window.location.href = checkoutUrl;
+    } else {
+      alert('Link de checkout não configurado para este pacote.');
     }
   };
 

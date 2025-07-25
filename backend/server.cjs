@@ -49,31 +49,30 @@ app.post('/api/pix/checkout', async (req, res) => {
 app.post('/api/pix/webhook', async (req, res) => {
   const data = req.body;
   console.log('Webhook BSPAY recebido:', data);
-  if ((data.status === 'CONFIRMED' || data.status === 'COMPLETED') && data.external_id) {
-    const [userId] = data.external_id.split('-');
-    const valorPago = data.amount || 30; // valor em reais, ajuste se vier em centavos
+  if ((data.status === 'CONFIRMED' || data.status === 'COMPLETED') && data.payer && data.payer.email) {
+    const email = data.payer.email;
     // Busca saldo atual
     const { data: usuario, error: fetchError } = await supabase
       .from('usuarios')
       .select('saldo')
-      .eq('id', userId)
+      .eq('email', email)
       .single();
     if (fetchError) {
       console.error('Erro ao buscar usuário:', fetchError);
       return res.status(500).send('Erro ao buscar usuário');
     }
     const saldoAtual = usuario?.saldo || 0;
-    const novoSaldo = saldoAtual + valorPago;
+    const novoSaldo = saldoAtual + 30;
     // Atualiza saldo do usuário
     const { error } = await supabase
       .from('usuarios')
       .update({ saldo: novoSaldo })
-      .eq('id', userId);
+      .eq('email', email);
     if (error) {
       console.error('Erro ao atualizar saldo do usuário:', error);
       return res.status(500).send('Erro ao atualizar usuário');
     }
-    console.log(`Pagamento confirmado e saldo atualizado para userId: ${userId}`);
+    console.log(`Pagamento confirmado e saldo atualizado para email: ${email}`);
   }
   res.status(200).send('OK');
 });
@@ -133,4 +132,4 @@ app.post('/api/pix/status', async (req, res) => {
 });
 
 const port = process.env.PORT || 4000;
-app.listen(port, () => console.log(`Servidor BSPAY rodando na porta ${port}`)); 
+app.listen(port, () => console.log(`Servidor BSPAY rodando na porta ${port}`));

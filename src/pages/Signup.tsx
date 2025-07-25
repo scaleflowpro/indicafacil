@@ -176,7 +176,8 @@ const Signup: React.FC = () => {
         // Account is activated since payment was confirmed
         credits: 30 // Give initial credits after payment
       });
-      navigate('/dashboard');
+      const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM';
+      window.location.href = BSPAY_CHECKOUT_URL;
     } catch (err) {
       setError('Erro ao criar conta. Tente novamente.');
     }
