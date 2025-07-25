@@ -65,10 +65,10 @@ const Recarga: React.FC = () => {
   ];
 
   const CHECKOUT_LINKS: Record<number, string> = {
-    10: 'https://checkout.payindicafacil.shop/buy/BSZDNIZTBMY2',
-    25: 'https://checkout.payindicafacil.shop/buy/BSZDG3NDM3Y2',
-    50: 'https://checkout.payindicafacil.shop/buy/BSOGNKZJJKMJ',
-    100: 'https://checkout.payindicafacil.shop/buy/BSMDQWZGNIYJ',
+    10: 'https://checkout.bspay.co/buy/BSZDNIZTBMY2',
+    25: 'https://checkout.bspay.co/buy/BSZDG3NDM3Y2',
+    50: 'https://checkout.bspay.co/buy/BSOGNKZJJKMJ',
+    100: 'https://checkout.bspay.co/buy/BSMDQWZGNIYJ',
   };
 
   // Link fixo do produto BSPAY para R$ 30
@@ -88,10 +88,10 @@ const Recarga: React.FC = () => {
     if (selectedPackageId === 1 && packages[0].price === 30) {
       redirectToCheckout();
     } else {
-      // Para outros pacotes, manter a lógica existente se necessário
+      // Para outros pacotes, usar os links do CHECKOUT_LINKS
       const checkoutUrl = CHECKOUT_LINKS[selectedPackageId];
       if (checkoutUrl) {
-        window.location.href = checkoutUrl;
+        window.open(checkoutUrl, '_blank');
       } else {
         alert('Link de checkout não configurado para este pacote.');
       }
