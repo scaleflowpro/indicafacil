@@ -142,7 +142,7 @@ const Signup: React.FC = () => {
       console.log('Conta criada com sucesso! Abrindo checkout...');
       
       // Abrir checkout em nova aba para evitar redirecionamento
-      const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM';
+      const BSPAY_CHECKOUT_URL = 'https://checkout.bspay.co/buy/BSMZNJMGUWMM';
       console.log('Abrindo checkout em nova aba:', BSPAY_CHECKOUT_URL);
       
       // Abrir em nova aba

@@ -64,7 +64,7 @@ const Recarga: React.FC = () => {
     }
   ];
 
-  const CHECKOUT_LINKS = {
+  const CHECKOUT_LINKS: Record<number, string> = {
     10: 'https://checkout.payindicafacil.shop/buy/BSZDNIZTBMY2',
     25: 'https://checkout.payindicafacil.shop/buy/BSZDG3NDM3Y2',
     50: 'https://checkout.payindicafacil.shop/buy/BSOGNKZJJKMJ',
@@ -72,12 +72,12 @@ const Recarga: React.FC = () => {
   };
 
   // Link fixo do produto BSPAY para R$ 30
-  const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM'; // Substitua pelo ID real do produto
+  const BSPAY_CHECKOUT_URL = 'https://checkout.bspay.co/buy/BSMZNJMGUWMM';
 
   // Função para redirecionar para o checkout BSPAY
   const redirectToCheckout = () => {
-    if (BSPAY_CHECKOUT_URL && BSPAY_CHECKOUT_URL !== 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM') {
-      window.location.href = BSPAY_CHECKOUT_URL;
+    if (BSPAY_CHECKOUT_URL) {
+      window.open(BSPAY_CHECKOUT_URL, '_blank');
     } else {
       alert('Link de checkout não configurado. Entre em contato com o suporte.');
     }
@@ -258,7 +258,7 @@ const Recarga: React.FC = () => {
             </div>
           </div>
 
-          <form onSubmit={handlePurchase} className="space-y-4">
+          <div className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Input
                 label="Nome Completo"
@@ -310,7 +310,7 @@ const Recarga: React.FC = () => {
                 {isProcessing ? 'Gerando...' : 'Gerar Cobrança Pix'}
               </Button>
             </div>
-          </form>
+          </div>
         </Card>
       )}
 
