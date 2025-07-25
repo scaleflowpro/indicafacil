@@ -24,7 +24,7 @@ const Signup: React.FC = () => {
   const [step, setStep] = useState(1); // 1: dados pessoais, 2: dados pix, 3: pagamento
 
   
-  const { signup, isLoading } = useAuth();
+  const { signup, isLoading, user } = useAuth();
   const navigate = useNavigate();
 
   // Check for referral code from localStorage on component mount
@@ -116,9 +116,14 @@ const Signup: React.FC = () => {
       // Abrir em nova aba
       window.open(BSPAY_CHECKOUT_URL, '_blank');
       
-      // Mostrar mensagem de sucesso
+      // Mostrar mensagem de sucesso e redirecionar para dashboard
       setError('');
       alert('Conta criada com sucesso! O checkout foi aberto em uma nova aba. Após o pagamento, você receberá os créditos automaticamente.');
+      
+      // Aguardar um pouco e redirecionar para dashboard
+      setTimeout(() => {
+        navigate('/dashboard');
+      }, 2000);
       
     } catch (err) {
       console.error('Erro ao criar conta:', err);

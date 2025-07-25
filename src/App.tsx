@@ -122,11 +122,7 @@ function AppRoutes() {
             <Login />
           </PublicRoute>
         } />
-        <Route path="/cadastro" element={
-          <PublicRoute>
-            <Signup />
-          </PublicRoute>
-        } />
+        <Route path="/cadastro" element={<Signup />} />
         <Route path="/r/:referralCode" element={
           <ReferralPage />
         } />
