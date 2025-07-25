@@ -108,14 +108,15 @@ app.post('/api/pix/generate', async (req, res) => {
   const { nome, cpf, email, valor, descricao, userId } = req.body;
   const external_id = `${userId || 'anon'}-${Date.now()}`;
   const payload = {
-    client_id: process.env.BSPAY_CLIENT_ID,
-    client_secret: process.env.BSPAY_CLIENT_SECRET,
-    nome,
-    cpf,
-    valor: valor.toString(), // Ex: "30.00"
-    descricao,
-    urlnoty: 'https://backend-indicafacil.onrender.com/api/pix/webhook',
-    external_id
+    amount: valor,
+    external_id,
+    payerQuestion: descricao || '',
+    payer: {
+      name: nome,
+      document: cpf,
+      email: email
+    },
+    postbackUrl: 'https://backend-indicafacil.onrender.com/api/pix/webhook'
   };
 
   try {
@@ -124,6 +125,7 @@ app.post('/api/pix/generate', async (req, res) => {
       payload,
       {
         headers: {
+          'Authorization': `Bearer ${process.env.BSPAY_TOKEN}`,
           'Content-Type': 'application/json'
         }
       }
