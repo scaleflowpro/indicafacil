@@ -32,11 +32,11 @@ const Recarga: React.FC = () => {
   const packages = [
     {
       id: 1,
-      credits: 10,
-      price: 10,
+      credits: 30,
+      price: 30,
       bonus: 0,
       popular: false,
-      description: 'Ideal para começar'
+      description: 'Pacote inicial'
     },
     {
       id: 2,
@@ -71,12 +71,30 @@ const Recarga: React.FC = () => {
     100: 'https://checkout.payindicafacil.shop/buy/BSMDQWZGNIYJ',
   };
 
-  const handlePurchase = (selectedPackageId: number) => {
-    const checkoutUrl = CHECKOUT_LINKS[selectedPackageId];
-    if (checkoutUrl) {
-      window.location.href = checkoutUrl;
+  // Link fixo do produto BSPAY para R$ 30
+  const BSPAY_CHECKOUT_URL = 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM'; // Substitua pelo ID real do produto
+
+  // Função para redirecionar para o checkout BSPAY
+  const redirectToCheckout = () => {
+    if (BSPAY_CHECKOUT_URL && BSPAY_CHECKOUT_URL !== 'https://checkout.payindicafacil.shop/buy/BSMZNJMGUWMM') {
+      window.location.href = BSPAY_CHECKOUT_URL;
     } else {
-      alert('Link de checkout não configurado para este pacote.');
+      alert('Link de checkout não configurado. Entre em contato com o suporte.');
+    }
+  };
+
+  const handlePurchase = (selectedPackageId: number) => {
+    // Para o pacote de R$ 30, usar o checkout BSPAY fixo
+    if (selectedPackageId === 1 && packages[0].price === 30) {
+      redirectToCheckout();
+    } else {
+      // Para outros pacotes, manter a lógica existente se necessário
+      const checkoutUrl = CHECKOUT_LINKS[selectedPackageId];
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        alert('Link de checkout não configurado para este pacote.');
+      }
     }
   };
 

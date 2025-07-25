@@ -49,31 +49,57 @@ app.post('/api/pix/checkout', async (req, res) => {
 app.post('/api/pix/webhook', async (req, res) => {
   const data = req.body;
   console.log('Webhook BSPAY recebido:', data);
+  
   if ((data.status === 'CONFIRMED' || data.status === 'COMPLETED') && data.payer && data.payer.email) {
     const email = data.payer.email;
-    // Busca saldo atual
-    const { data: usuario, error: fetchError } = await supabase
-      .from('usuarios')
-      .select('saldo')
-      .eq('email', email)
-      .single();
-    if (fetchError) {
-      console.error('Erro ao buscar usuário:', fetchError);
-      return res.status(500).send('Erro ao buscar usuário');
+    
+    try {
+      // Buscar usuário na tabela profiles pelo email
+      const { data: authUsers, error: authError } = await supabase.auth.admin.listUsers();
+      if (authError) {
+        console.error('Erro ao buscar usuários:', authError);
+        return res.status(500).send('Erro ao buscar usuários');
+      }
+      
+      const user = authUsers.users.find(u => u.email === email);
+      if (!user) {
+        console.error('Usuário não encontrado para email:', email);
+        return res.status(404).send('Usuário não encontrado');
+      }
+      
+      // Buscar perfil do usuário
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('credits')
+        .eq('id', user.id)
+        .single();
+      
+      if (profileError) {
+        console.error('Erro ao buscar perfil:', profileError);
+        return res.status(500).send('Erro ao buscar perfil');
+      }
+      
+      const creditsAtuais = profile?.credits || 0;
+      const novosCredits = creditsAtuais + 30; // Adiciona 30 créditos
+      
+      // Atualiza créditos do usuário na tabela profiles
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ credits: novosCredits })
+        .eq('id', user.id);
+      
+      if (updateError) {
+        console.error('Erro ao atualizar créditos do usuário:', updateError);
+        return res.status(500).send('Erro ao atualizar usuário');
+      }
+      
+      console.log(`Pagamento confirmado e créditos atualizados para email: ${email} (${creditsAtuais} -> ${novosCredits})`);
+    } catch (error) {
+      console.error('Erro no webhook:', error);
+      return res.status(500).send('Erro interno do servidor');
     }
-    const saldoAtual = usuario?.saldo || 0;
-    const novoSaldo = saldoAtual + 30;
-    // Atualiza saldo do usuário
-    const { error } = await supabase
-      .from('usuarios')
-      .update({ saldo: novoSaldo })
-      .eq('email', email);
-    if (error) {
-      console.error('Erro ao atualizar saldo do usuário:', error);
-      return res.status(500).send('Erro ao atualizar usuário');
-    }
-    console.log(`Pagamento confirmado e saldo atualizado para email: ${email}`);
   }
+  
   res.status(200).send('OK');
 });
 
