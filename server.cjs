@@ -15,24 +15,25 @@ app.post('/api/pix/generate', async (req, res) => {
   const { nome, cpf, valor, descricao } = req.body;
   try {
     const response = await axios.post(
-      'https://api.ghostspaysv1.com/pix/charge', // CONFIRME O ENDPOINT NA DOC
+      'https://bspaybr.com/v3/pix/qrcode', // ou o endpoint correto da doc
       {
-        name: nome,
-        cpf: cpf,
-        value: valor,
-        description: descricao
-        // outros campos conforme a doc
+        client_id: process.env.BSPAY_CLIENT_ID,
+        client_secret: process.env.BSPAY_CLIENT_SECRET,
+        nome,
+        cpf,
+        valor: valor.toString(), // geralmente em string
+        descricao,
+        urlnoty: 'https://seudominio.com/api/pix/webhook'
       },
       {
         headers: {
-          'Authorization': `Bearer ${GHOSTPAY_SECRETKEY}`,
           'Content-Type': 'application/json'
         }
       }
     );
     res.json(response.data);
   } catch (err) {
-    console.error('Erro GhostsPay:', err.response?.data || err.message);
+    console.error('Erro BSPAY:', err.response?.data || err.message);
     res.status(500).send(err.response?.data || 'Erro ao criar Pix');
   }
 });
