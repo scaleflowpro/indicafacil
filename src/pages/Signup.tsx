@@ -92,20 +92,52 @@ const Signup: React.FC = () => {
     e.preventDefault();
     setError('');
     
-    if (!formData.pixKey || !formData.cpf) {
-      setError('Por favor, preencha todos os campos');
+    // Validação completa dos dados
+    if (!formData.name || !formData.email || !formData.phone || !formData.cpf || !formData.password || !formData.pixKey) {
+      setError('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
+    if (formData.password.length < 6) {
+      setError('A senha deve ter pelo menos 6 caracteres');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('As senhas não coincidem');
+      return;
+    }
+
+    // Validar formato do email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Digite um e-mail válido');
+      return;
+    }
+
+    // Validar dados antes de enviar
+    console.log('Dados do formulário:', {
+      ...formData,
+      referredBy: referralCode,
+      password: '[HIDDEN]'
+    });
+
     // Primeiro, criar a conta do usuário
     try {
-      console.log('Criando conta do usuário...');
-      await signup({
+      console.log('Iniciando criação da conta...');
+      const signupData = {
         ...formData,
         referredBy: referralCode,
         // Não dar créditos ainda, pois o pagamento será feito via checkout
         credits: 0
+      };
+      
+      console.log('Chamando função signup com dados:', {
+        ...signupData,
+        password: '[HIDDEN]'
       });
+      
+      await signup(signupData);
       
       console.log('Conta criada com sucesso! Abrindo checkout...');
       
@@ -126,8 +158,24 @@ const Signup: React.FC = () => {
       }, 2000);
       
     } catch (err) {
-      console.error('Erro ao criar conta:', err);
-      setError('Erro ao criar conta. Tente novamente.');
+      console.error('Erro detalhado ao criar conta:', err);
+      
+      // Mostrar erro mais específico
+      let errorMessage = 'Erro ao criar conta. Tente novamente.';
+      
+      if (err instanceof Error) {
+        if (err.message.includes('email')) {
+          errorMessage = 'Este e-mail já está em uso. Tente outro e-mail.';
+        } else if (err.message.includes('password')) {
+          errorMessage = 'Senha muito fraca. Use pelo menos 6 caracteres.';
+        } else if (err.message.includes('network')) {
+          errorMessage = 'Erro de conexão. Verifique sua internet.';
+        } else {
+          errorMessage = `Erro: ${err.message}`;
+        }
+      }
+      
+      setError(errorMessage);
     }
   };
 
