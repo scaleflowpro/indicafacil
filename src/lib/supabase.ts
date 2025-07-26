@@ -1,4 +1,4 @@
-import { supabase } from './client'; // ou ajuste o caminho se for diferente
+import { supabase } from './client';
 
 // Função auxiliar para gerar código de indicação
 export const generateReferralCode = (base: string = 'USER') => {
@@ -22,15 +22,24 @@ export const signUpUser = async ({
   referredBy?: string;
 }) => {
   // Etapa 1: Criar conta no Auth
-  const { data, error: authError } = await supabase.auth.signUp({
+  const { data: signUpData, error: authError } = await supabase.auth.signUp({
     email,
     password
   });
 
   if (authError) throw authError;
 
-  const authUser = data.user;
-  if (!authUser) throw new Error('Erro ao criar usuário');
+  const userId = signUpData.user?.id;
+
+  if (!userId) throw new Error('Erro ao criar usuário');
+
+  // ✅ Etapa 1.5: Autenticar para liberar o RLS
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password
+  });
+
+  if (signInError) throw signInError;
 
   // Etapa 2: Gerar código de indicação
   const referralCode = generateReferralCode(name);
@@ -39,7 +48,7 @@ export const signUpUser = async ({
   const { data: insertedProfile, error: insertError } = await supabase
     .from('profiles')
     .insert({
-      id: authUser.id, // IMPORTANTE: obrigatório por causa da RLS
+      id: userId, // Precisa ser igual a auth.uid()
       name,
       email,
       phone,
@@ -55,5 +64,5 @@ export const signUpUser = async ({
 
   if (insertError) throw insertError;
 
-  return { user: authUser, profile: insertedProfile };
+  return { user: signUpData.user, profile: insertedProfile };
 };
