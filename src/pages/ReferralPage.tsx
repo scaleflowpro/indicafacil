@@ -14,18 +14,31 @@ const ReferralPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Debug logs
+  console.log('=== REFERRAL PAGE DEBUG ===');
+  console.log('referralCode from params:', referralCode);
+  console.log('user:', user);
+  console.log('current URL:', window.location.href);
+
   // If user is already logged in, redirect to dashboard
   useEffect(() => {
+    console.log('ReferralPage useEffect - user check:', user);
     if (user) {
+      console.log('User is logged in, redirecting to dashboard');
       navigate('/dashboard');
       return;
     }
   }, [user, navigate]);
 
   useEffect(() => {
+    console.log('ReferralPage useEffect - referralCode check:', referralCode);
     if (referralCode) {
       console.log('Loading referrer info for code:', referralCode);
       loadReferrerInfo();
+    } else {
+      console.log('No referral code found in URL');
+      setError('Código de indicação não encontrado na URL');
+      setIsLoading(false);
     }
   }, [referralCode]);
 
@@ -47,12 +60,14 @@ const ReferralPage: React.FC = () => {
         console.error('Referrer not found:', error);
         
         // Try to find any profile with similar code (case insensitive)
-        const { data: similarCodes, error: similarError } = await supabase
-          .from('profiles')
-          .select('referral_code')
-          .ilike('referral_code', referralCode);
-        
-        console.log('Similar codes found:', similarCodes);
+        if (referralCode) {
+          const { data: similarCodes, error: similarError } = await supabase
+            .from('profiles')
+            .select('referral_code')
+            .ilike('referral_code', referralCode);
+          
+          console.log('Similar codes found:', similarCodes);
+        }
         
         if (error?.code === 'PGRST116') {
           setError('Código de indicação não encontrado. Verifique se o link está correto.');
