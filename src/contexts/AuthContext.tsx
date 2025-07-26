@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User, AuthContextType } from '../types';
-import { supabase, signUpUser, signInUser, getUserProfile, updateUserProfile } from '../lib/supabase';
+import { supabase, signUpUser, signInUser, getUserProfile, updateUserProfile, generateReferralCode } from '../lib/supabase';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -252,19 +252,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const signup = async (data: any) => {
     setIsLoading(true);
     try {
-      console.log('Starting signup with data:', { ...data, password: '[HIDDEN]' });
+      console.log('Starting signup with data:', { 
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        pixKey: data.pixKey,
+        referredBy: data.referredBy,
+        password: '[HIDDEN]'
+      });
+      
       const { user: authUser, profile } = await signUpUser({
         name: data.name,
         email: data.email,
         phone: data.phone,
         password: data.password,
         pixKey: data.pixKey,
-        referredBy: data.referredBy,
-        transactionId: data.transactionId
+        referredBy: data.referredBy
       });
 
       if (authUser && profile) {
-        console.log('Auth user and profile created successfully:', profile);
+        console.log('Auth user and profile created successfully:', {
+          profileId: profile.id,
+          profileName: profile.name,
+          profileEmail: profile.email,
+          profilePixKey: profile.pix_key
+        });
         setUser({
           id: profile.id,
           name: profile.name || '',

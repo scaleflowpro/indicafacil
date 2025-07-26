@@ -47,9 +47,29 @@ const Signup: React.FC = () => {
       return;
     }
 
+    // Validação adicional para email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('E-mail inválido');
+      return;
+    }
+
+    // Log dos dados antes do envio
+    console.log('Dados do formulário:', {
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      pixKey: formData.pixKey,
+      referredBy: referralCode
+    });
+
     try {
       await signup({
-        ...formData,
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        password: formData.password,
+        pixKey: formData.pixKey,
         referredBy: referralCode,
         credits: 0
       });
