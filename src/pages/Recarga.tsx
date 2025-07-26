@@ -1,3 +1,4 @@
+import { platform } from '@todesktop/client-core';
 import React, { useState } from 'react';
 import { CreditCard, Zap, Gift, Copy, Check, QrCode, Calendar } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
