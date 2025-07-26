@@ -22,13 +22,12 @@ const Recarga: React.FC = () => {
     { id: 4, credits: 100, price: 100, bonus: 25, popular: false, description: 'Para profissionais' },
   ];
 
-  // Novos links de checkout fornecidos pelo usuário
-  const CHECKOUT_LINKS: Record<number, string> = {
-    10: 'https://checkout.bspay.co/buy/BSZDNIZTBMY2',
-    25: 'https://checkout.bspay.co/buy/BSZDG3NDM3Y2',
-    50: 'https://checkout.bspay.co/buy/BSOGNKZJJKMJ',
-    100: 'https://checkout.bspay.co/buy/BSMDQWZGNIYJ',
-  };
+// Mapeia quantidade de créditos para o link de checkout correspondente
+const CHECKOUT_LINKS: Record<number, string> = {
+  25: 'https://checkout.bspay.co/buy/BSZDG3NDM3Y2',
+  50: 'https://checkout.bspay.co/buy/BSOGNKZJJKMJ',
+  100: 'https://checkout.bspay.co/buy/BSMDQWZGNIYJ',
+};
 
   // Link fixo para o pacote de R$ 30 (ativação da conta)
   const BSPAY_CHECKOUT_URL = 'https://checkout.bspay.co/buy/BSMZNJMGUWMM';
