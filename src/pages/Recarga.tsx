@@ -2,134 +2,90 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import { supabase } from '../lib/supabase';
 
 interface Package {
-  id: number;
+  id: string;
   name: string;
   credits: number;
   bonus: number;
   price: number;
   description: string;
+  bspayProductId: string;
 }
 
 const Recarga: React.FC = () => {
   const { user } = useAuth();
   const [selectedPackage, setSelectedPackage] = useState<Package | null>(null);
   const [loading, setLoading] = useState(false);
-  const [pixData, setPixData] = useState<{
-    qrCode: string;
-    pixCode: string;
-    transactionId: string;
-    expiresAt: string;
-  } | null>(null);
   const [error, setError] = useState('');
 
   const packages: Package[] = [
     {
-      id: 1,
+      id: '1',
       name: 'Pacote Básico',
       credits: 10,
       bonus: 0,
       price: 10,
-      description: '10 créditos'
+      description: '10 créditos',
+      bspayProductId: 'BSZDG3NDM3Y2'
     },
     {
-      id: 2,
+      id: '2',
       name: 'Pacote Popular',
       credits: 25,
       bonus: 5,
       price: 25,
-      description: '25 créditos + 5 bônus'
+      description: '25 créditos + 5 bônus',
+      bspayProductId: 'BSOGNKZJJKMJ'
     },
     {
-      id: 3,
+      id: '3',
       name: 'Pacote Premium',
       credits: 50,
       bonus: 10,
       price: 50,
-      description: '50 créditos + 10 bônus'
+      description: '50 créditos + 10 bônus',
+      bspayProductId: 'BSMDQWZGNIYJ'
     },
     {
-      id: 4,
+      id: '4',
       name: 'Pacote Máximo',
       credits: 100,
       bonus: 25,
       price: 100,
-      description: '100 créditos + 25 bônus'
+      description: '100 créditos + 25 bônus',
+      bspayProductId: 'BSMZNJMGUWMM'
     }
   ];
 
   const handlePackageSelect = (pkg: Package) => {
     setSelectedPackage(pkg);
-    setPixData(null);
     setError('');
   };
 
-  const generatePix = async () => {
+  const handleCheckout = async () => {
     if (!selectedPackage || !user) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const { data, error } = await supabase.functions.invoke('pix-recharge', {
-        body: {
-          action: 'create',
-          data: {
-            packageId: selectedPackage.id,
-            name: user.name,
-            email: user.email,
-            cpf: '', // Adicionar campo CPF se necessário
-            phone: user.phone
-          }
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setPixData({
-          qrCode: data.qrCode,
-          pixCode: data.pixCode,
-          transactionId: data.transactionId,
-          expiresAt: data.expiresAt
-        });
-      } else {
-        setError(data.error || 'Erro ao gerar PIX');
-      }
+      // Gerar ID único para a transação
+      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      
+      // URL do checkout BSPay
+      const checkoutUrl = `https://checkout.bspay.com.br/pay/${selectedPackage.bspayProductId}?email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}&phone=${encodeURIComponent(user.phone || '')}&transaction_id=${transactionId}`;
+      
+      // Abrir checkout em nova aba
+      window.open(checkoutUrl, '_blank');
+      
+      // Mostrar mensagem de sucesso
+      alert('Checkout aberto! Complete o pagamento e os créditos serão adicionados automaticamente.');
+      
     } catch (err: any) {
-      setError(err.message || 'Erro ao gerar PIX');
+      setError(err.message || 'Erro ao abrir checkout');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const checkPaymentStatus = async () => {
-    if (!pixData) return;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('pix-recharge', {
-        body: {
-          action: 'check',
-          transactionId: pixData.transactionId
-        }
-      });
-
-      if (error) throw error;
-
-      if (data.status === 'paid') {
-        alert('Pagamento confirmado! Seus créditos foram adicionados.');
-        setPixData(null);
-        setSelectedPackage(null);
-        // Recarregar dados do usuário
-        window.location.reload();
-      } else if (data.status === 'expired') {
-        setError('PIX expirado. Gere um novo PIX.');
-        setPixData(null);
-      }
-    } catch (err: any) {
-      console.error('Erro ao verificar pagamento:', err);
     }
   };
 
@@ -177,7 +133,7 @@ const Recarga: React.FC = () => {
           <Card className="p-6">
             <div className="text-center">
               <h2 className="text-2xl font-bold text-gray-800 mb-4">
-                Pagamento via PIX
+                Pagamento via BSPay
               </h2>
               <p className="text-gray-600 mb-6">
                 Valor: <span className="font-semibold">R$ {selectedPackage.price.toFixed(2)}</span><br />
@@ -187,71 +143,31 @@ const Recarga: React.FC = () => {
                 </span>
               </p>
 
-              {!pixData ? (
-                <Button
-                  onClick={generatePix}
-                  disabled={loading}
-                  fullWidth
-                  size="lg"
-                >
-                  {loading ? 'Gerando PIX...' : 'Gerar PIX'}
-                </Button>
-              ) : (
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Escaneie o QR Code:</h3>
-                    <div className="flex justify-center">
-                      <img 
-                        src={pixData.qrCode} 
-                        alt="QR Code PIX" 
-                        className="max-w-48 h-auto"
-                      />
-                    </div>
-                  </div>
+              <Button
+                onClick={handleCheckout}
+                disabled={loading}
+                fullWidth
+                size="lg"
+              >
+                {loading ? 'Abrindo Checkout...' : 'Pagar com BSPay'}
+              </Button>
 
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <h3 className="font-semibold mb-2">Ou copie o código PIX:</h3>
-                    <textarea
-                      value={pixData.pixCode}
-                      readOnly
-                      className="w-full p-3 border rounded-lg text-sm font-mono"
-                      rows={3}
-                      onClick={(e) => (e.target as HTMLTextAreaElement).select()}
-                    />
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={checkPaymentStatus}
-                      variant="outline"
-                      fullWidth
-                    >
-                      Verificar Pagamento
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setPixData(null);
-                        setSelectedPackage(null);
-                      }}
-                      variant="outline"
-                      fullWidth
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-
-                  <p className="text-xs text-gray-500">
-                    Expira em: {new Date(pixData.expiresAt).toLocaleString('pt-BR')}
-                  </p>
-                </div>
-              )}
+              <div className="mt-4 p-4 bg-blue-50 rounded-lg">
+                <h3 className="font-semibold text-blue-800 mb-2">Como funciona:</h3>
+                <ol className="text-sm text-blue-700 text-left space-y-1">
+                  <li>1. Clique em "Pagar com BSPay"</li>
+                  <li>2. Complete o pagamento no checkout</li>
+                  <li>3. Os créditos serão adicionados automaticamente</li>
+                  <li>4. Você receberá uma confirmação por email</li>
+                </ol>
+              </div>
             </div>
           </Card>
         )}
 
         <div className="text-center mt-8">
           <p className="text-sm text-gray-500">
-            Após o pagamento, os créditos serão adicionados automaticamente à sua conta.
+            Após o pagamento, os créditos serão adicionados automaticamente à sua conta via webhook.
           </p>
         </div>
       </div>
