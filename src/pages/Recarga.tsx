@@ -27,7 +27,7 @@ const Recarga: React.FC = () => {
       bonus: 0,
       price: 10,
       description: '10 créditos',
-      bspayProductId: 'BSZDG3NDM3Y2'
+      bspayProductId: 'BSZDNIZTBMY2'
     },
     {
       id: '2',
@@ -36,7 +36,7 @@ const Recarga: React.FC = () => {
       bonus: 5,
       price: 25,
       description: '25 créditos + 5 bônus',
-      bspayProductId: 'BSOGNKZJJKMJ'
+      bspayProductId: 'BSZDG3NDM3Y2'
     },
     {
       id: '3',
@@ -45,7 +45,7 @@ const Recarga: React.FC = () => {
       bonus: 10,
       price: 50,
       description: '50 créditos + 10 bônus',
-      bspayProductId: 'BSMDQWZGNIYJ'
+      bspayProductId: 'BSOGNKZJJKMJ'
     },
     {
       id: '4',
@@ -54,7 +54,7 @@ const Recarga: React.FC = () => {
       bonus: 25,
       price: 100,
       description: '100 créditos + 25 bônus',
-      bspayProductId: 'BSMZNJMGUWMM'
+      bspayProductId: 'BSMDQWZGNIYJ'
     }
   ];
 
@@ -73,16 +73,27 @@ const Recarga: React.FC = () => {
       // Gerar ID único para a transação
       const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
       
-      // URL do checkout BSPay
-      const checkoutUrl = `https://checkout.bspay.com.br/pay/${selectedPackage.bspayProductId}?email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}&phone=${encodeURIComponent(user.phone || '')}&transaction_id=${transactionId}`;
+      // URL correta do checkout BSPay
+      const checkoutUrl = `https://checkout.bspay.co/buy/${selectedPackage.bspayProductId}?email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}&phone=${encodeURIComponent(user.phone || '')}&transaction_id=${transactionId}`;
+      
+      // Log para debug
+      console.log('Abrindo checkout BSPay:', checkoutUrl);
+      console.log('Produto:', selectedPackage.bspayProductId);
+      console.log('Usuário:', user.email);
       
       // Abrir checkout em nova aba
-      window.open(checkoutUrl, '_blank');
+      const newWindow = window.open(checkoutUrl, '_blank');
       
-      // Mostrar mensagem de sucesso
-      alert('Checkout aberto! Complete o pagamento e os créditos serão adicionados automaticamente.');
+      // Verificar se a janela foi aberta
+      if (newWindow) {
+        // Mostrar mensagem de sucesso
+        alert('Checkout aberto! Complete o pagamento e os créditos serão adicionados automaticamente.');
+      } else {
+        setError('Erro ao abrir checkout. Verifique se o popup está bloqueado.');
+      }
       
     } catch (err: any) {
+      console.error('Erro no checkout:', err);
       setError(err.message || 'Erro ao abrir checkout');
     } finally {
       setLoading(false);
