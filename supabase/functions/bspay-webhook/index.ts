@@ -21,17 +21,50 @@ serve(async (req) => {
   }
 
   try {
-    // Criar cliente Supabase com service role key (sem autenticação de usuário)
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
+    // Verificar autenticação (usuário real ou chave anônima)
+    const authHeader = req.headers.get('Authorization')
+    let supabaseClient
+    let authenticatedUser = null
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.replace('Bearer ', '')
+      
+      // Tentar autenticar como usuário real primeiro
+      try {
+        supabaseClient = createClient(
+          Deno.env.get('SUPABASE_URL') ?? '',
+          Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+          {
+            global: {
+              headers: { Authorization: authHeader },
+            },
+          }
+        )
+
+        const { data: { user }, error: userError } = await supabaseClient.auth.getUser()
+        if (user && !userError) {
+          authenticatedUser = user
+          console.log('Authenticated as user:', user.email)
         }
+      } catch (error) {
+        console.log('Not a valid user token, trying service role')
       }
-    )
+    }
+
+    // Se não conseguiu autenticar como usuário, usar service role
+    if (!authenticatedUser) {
+      supabaseClient = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+        {
+          auth: {
+            autoRefreshToken: false,
+            persistSession: false
+          }
+        }
+      )
+      console.log('Using service role for webhook processing')
+    }
 
     // Log para debug
     console.log('Webhook received:', req.method, req.url)
@@ -174,7 +207,8 @@ serve(async (req) => {
           total_credits: totalCredits,
           payment_method: 'bspay',
           paid_at: paidAt,
-          webhook_data: webhookData
+          webhook_data: webhookData,
+          processed_by: authenticatedUser?.email || 'service_role'
         }
       })
 
@@ -187,7 +221,8 @@ serve(async (req) => {
       email: customerEmail,
       credits_added: totalCredits,
       transaction_id: transactionId,
-      product_id: productId
+      product_id: productId,
+      processed_by: authenticatedUser?.email || 'service_role'
     })
 
     return new Response(
@@ -197,7 +232,8 @@ serve(async (req) => {
         user_id: user.id,
         email: customerEmail,
         credits_added: totalCredits,
-        transaction_id: transactionId
+        transaction_id: transactionId,
+        processed_by: authenticatedUser?.email || 'service_role'
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
