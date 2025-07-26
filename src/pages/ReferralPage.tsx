@@ -48,11 +48,18 @@ const ReferralPage: React.FC = () => {
       setError('');
       console.log('Searching for referral code:', referralCode);
       
-      const { data: referrerData, error } = await supabase
+      // Adicionar timeout para evitar carregamento infinito
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout - demorou muito para carregar')), 10000)
+      );
+
+      const queryPromise = supabase
         .from('profiles')
-        .select('id, name, referral_code, role')
+        .select('id, name, referral_code, role, credits')
         .eq('referral_code', referralCode)
         .single();
+
+      const { data: referrerData, error } = await Promise.race([queryPromise, timeoutPromise]) as any;
 
       console.log('Referrer query result:', { referrerData, error });
 
@@ -71,11 +78,19 @@ const ReferralPage: React.FC = () => {
         
         if (error?.code === 'PGRST116') {
           setError('Código de indicação não encontrado. Verifique se o link está correto.');
+        } else if (error?.message?.includes('Timeout')) {
+          setError('Erro de conexão. Tente novamente.');
         } else if (error) {
           setError(`Erro ao validar código: ${error.message}`);
         } else {
           setError('Link de indicação inválido ou expirado');
         }
+        return;
+      }
+
+      // Verificar se o indicador tem créditos
+      if (referrerData.credits <= 0) {
+        setError('Este indicador não tem créditos disponíveis para indicações.');
         return;
       }
 
@@ -88,7 +103,11 @@ const ReferralPage: React.FC = () => {
       setReferrer(referrerData);
     } catch (error) {
       console.error('Error loading referrer info:', error);
-      setError(`Erro ao carregar informações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      if (error instanceof Error && error.message.includes('Timeout')) {
+        setError('Erro de conexão. Tente novamente.');
+      } else {
+        setError(`Erro ao carregar informações: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      }
     } finally {
       setIsLoading(false);
     }

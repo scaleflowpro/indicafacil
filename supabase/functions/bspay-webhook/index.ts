@@ -143,7 +143,7 @@ serve(async (req) => {
     // Buscar usuário pelo email
     const { data: user, error: userError } = await supabaseClient
       .from('profiles')
-      .select('id, credits')
+      .select('id, credits, referred_by')
       .eq('email', customerEmail)
       .single()
 
@@ -214,6 +214,71 @@ serve(async (req) => {
 
     if (transactionError) {
       console.error('Error creating transaction:', transactionError)
+    }
+
+    // Processar comissão de indicação se o usuário foi indicado
+    if (user.referred_by) {
+      try {
+        console.log('Processing referral commission for user:', user.id, 'referred by:', user.referred_by)
+        
+        // Buscar o indicador
+        const { data: referrer, error: referrerError } = await supabaseClient
+          .from('profiles')
+          .select('id, name, balance, total_earnings')
+          .eq('id', user.referred_by)
+          .single()
+
+        if (referrerError || !referrer) {
+          console.error('Error finding referrer:', referrerError)
+        } else {
+          // Adicionar comissão de R$ 30 ao indicador
+          const commissionAmount = 30.00
+          
+          const { error: commissionError } = await supabaseClient
+            .from('profiles')
+            .update({
+              balance: (referrer.balance || 0) + commissionAmount,
+              total_earnings: (referrer.total_earnings || 0) + commissionAmount,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', referrer.id)
+
+          if (commissionError) {
+            console.error('Error updating referrer commission:', commissionError)
+          } else {
+            // Registrar a comissão na tabela de transações
+            const { error: commissionTransactionError } = await supabaseClient
+              .from('transactions')
+              .insert({
+                user_id: referrer.id,
+                type: 'commission',
+                amount: commissionAmount,
+                description: `Comissão de indicação - ${user.name || user.email}`,
+                status: 'completed',
+                reference_id: `commission_${transactionId}`,
+                metadata: {
+                  referred_user_id: user.id,
+                  referred_user_name: user.name || user.email,
+                  commission_type: 'referral',
+                  original_transaction_id: transactionId
+                }
+              })
+
+            if (commissionTransactionError) {
+              console.error('Error creating commission transaction:', commissionTransactionError)
+            } else {
+              console.log('Referral commission processed successfully:', {
+                referrer_id: referrer.id,
+                referrer_name: referrer.name,
+                commission_amount: commissionAmount,
+                referred_user: user.name || user.email
+              })
+            }
+          }
+        }
+      } catch (commissionError) {
+        console.error('Error processing referral commission:', commissionError)
+      }
     }
 
     console.log('Credits added successfully:', {
