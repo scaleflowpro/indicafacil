@@ -1,7 +1,7 @@
-# Configuração do Webhook BSPay (Sem Chave Secreta)
+# Configuração do Webhook BSPay (Com Header de Autorização)
 
 ## 🎯 **Objetivo**
-Configurar o webhook do BSPay para adicionar créditos automaticamente após pagamento confirmado, **sem necessidade de chave secreta**.
+Configurar o webhook do BSPay para adicionar créditos automaticamente após pagamento confirmado.
 
 ## 📋 **Passos para Configurar**
 
@@ -11,15 +11,22 @@ Configurar o webhook do BSPay para adicionar créditos automaticamente após pag
 npx supabase functions deploy bspay-webhook
 ```
 
-### 2. **Configurar Webhook no BSPay**
+### 2. **Obter a Chave Anônima**
+No Supabase Dashboard:
+- Vá para Settings > API
+- Copie a "anon public" key
+
+### 3. **Configurar Webhook no BSPay**
 No painel do BSPay:
 - Vá para Configurações > Webhooks
 - URL do webhook: `https://seu-projeto.supabase.co/functions/v1/bspay-webhook`
 - Método: POST
-- **Headers: (deixe vazio por enquanto)**
+- **Headers:**
+  - `Authorization: Bearer sua_chave_anonima_aqui`
+  - `Content-Type: application/json`
 - Eventos: `payment.confirmed` ou `payment.approved`
 
-### 3. **Estrutura do Webhook**
+### 4. **Estrutura do Webhook**
 A função aceita diferentes formatos de webhook:
 
 #### Formato 1 (Esperado):
@@ -59,7 +66,7 @@ A função aceita diferentes formatos de webhook:
 }
 ```
 
-### 4. **Mapeamento de Produtos**
+### 5. **Mapeamento de Produtos**
 - `BSZDG3NDM3Y2` → 25 créditos + 5 bônus (R$ 25)
 - `BSOGNKZJJKMJ` → 50 créditos + 10 bônus (R$ 50)
 - `BSMDQWZGNIYJ` → 100 créditos + 25 bônus (R$ 100)
@@ -73,9 +80,10 @@ A função aceita diferentes formatos de webhook:
 
 ## 🔧 **Teste do Webhook**
 
-### Teste Manual (Sem Autenticação)
+### Teste Manual (Com Autenticação)
 ```bash
-curl -X POST https://seu-projeto.supabase.co/functions/v1/bspay-webhook \
+curl -X POST https://nsuoxowufivosxcchgqx.supabase.co/functions/v1/bspay-webhook \
+  -H "Authorization: Bearer sua_chave_anonima_aqui" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "paid",
@@ -87,7 +95,8 @@ curl -X POST https://seu-projeto.supabase.co/functions/v1/bspay-webhook \
 
 ### Teste com Product ID
 ```bash
-curl -X POST https://seu-projeto.supabase.co/functions/v1/bspay-webhook \
+curl -X POST https://nsuoxowufivosxcchgqx.supabase.co/functions/v1/bspay-webhook \
+  -H "Authorization: Bearer sua_chave_anonima_aqui" \
   -H "Content-Type: application/json" \
   -d '{
     "status": "paid",
@@ -110,16 +119,11 @@ curl -X POST https://seu-projeto.supabase.co/functions/v1/bspay-webhook \
 - Consulte a tabela `profiles` para ver o campo `credits`
 - Verifique a tabela `transactions` para ver o histórico
 
-## 🔒 **Segurança (Opcional)**
+## 🔒 **Segurança**
 
-Quando tiver a chave secreta do BSPay:
-
-1. **Adicione a variável de ambiente**:
-   - No Supabase Dashboard: Settings > Environment Variables
-   - Adicione: `BSPAY_WEBHOOK_SECRET=sua_chave_secreta_aqui`
-
-2. **Configure o header no BSPay**:
-   - Header: `Authorization: Bearer sua_chave_secreta_aqui`
+1. **Use a chave anônima**: É segura para uso público
+2. **Monitore os logs**: Verifique se não há tentativas de abuso
+3. **Validação**: A função valida dados antes de processar
 
 ## ⚠️ **Importante**
 
@@ -143,4 +147,5 @@ Se algo não funcionar:
 1. Verifique os logs da Edge Function
 2. Confirme se o email do usuário está correto
 3. Verifique se o valor/amount está correto
-4. Teste com diferentes formatos de webhook 
+4. Teste com diferentes formatos de webhook
+5. Confirme se o header de autorização está correto 

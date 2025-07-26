@@ -15,11 +15,13 @@ const BSPAY_PRODUCTS = {
 }
 
 serve(async (req) => {
+  // Permitir CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
 
   try {
+    // Criar cliente Supabase com service role key (sem autenticação de usuário)
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
@@ -31,21 +33,11 @@ serve(async (req) => {
       }
     )
 
-    // TODO: Adicionar autenticação quando tiver a chave secreta do BSPay
-    // Por enquanto, aceita webhooks sem autenticação para desenvolvimento
-    const webhookSecret = Deno.env.get('BSPAY_WEBHOOK_SECRET')
-    if (webhookSecret) {
-      const authHeader = req.headers.get('Authorization')
-      if (authHeader !== `Bearer ${webhookSecret}`) {
-        return new Response(
-          JSON.stringify({ error: 'Unauthorized' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
-      }
-    }
+    // Log para debug
+    console.log('Webhook received:', req.method, req.url)
 
     const webhookData = await req.json()
-    console.log('BSPay webhook received:', webhookData)
+    console.log('BSPay webhook data:', webhookData)
 
     // Extrair dados do webhook (formato pode variar dependendo do BSPay)
     let eventType, transactionId, productId, customerEmail, amount, status, paidAt
