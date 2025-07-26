@@ -70,27 +70,17 @@ const Recarga: React.FC = () => {
     setError('');
 
     try {
-      // Gerar ID único para a transação
-      const transactionId = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      
-      // URL correta do checkout BSPay
-      const checkoutUrl = `https://checkout.bspay.co/buy/${selectedPackage.bspayProductId}?email=${encodeURIComponent(user.email)}&name=${encodeURIComponent(user.name || '')}&phone=${encodeURIComponent(user.phone || '')}&transaction_id=${transactionId}`;
+      // URL simples do BSPay
+      const checkoutUrl = `https://checkout.bspay.co/buy/${selectedPackage.bspayProductId}`;
       
       // Log para debug
-      console.log('Abrindo checkout BSPay:', checkoutUrl);
-      console.log('Produto:', selectedPackage.bspayProductId);
+      console.log('=== DEBUG CHECKOUT ===');
+      console.log('Produto ID:', selectedPackage.bspayProductId);
+      console.log('URL:', checkoutUrl);
       console.log('Usuário:', user.email);
       
-      // Abrir checkout em nova aba
-      const newWindow = window.open(checkoutUrl, '_blank');
-      
-      // Verificar se a janela foi aberta
-      if (newWindow) {
-        // Mostrar mensagem de sucesso
-        alert('Checkout aberto! Complete o pagamento e os créditos serão adicionados automaticamente.');
-      } else {
-        setError('Erro ao abrir checkout. Verifique se o popup está bloqueado.');
-      }
+      // Abrir diretamente no navegador (mesma aba)
+      window.location.href = checkoutUrl;
       
     } catch (err: any) {
       console.error('Erro no checkout:', err);
